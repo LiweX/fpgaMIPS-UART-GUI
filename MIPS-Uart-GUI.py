@@ -1,15 +1,22 @@
+import numpy as np
 import PySimpleGUI as sg
 import os
 import serial
 
+registers = np.arange(1,33).reshape(32,1)
+
 # Crear una nueva ventana con tamaño personalizadosudo apt-get install python-tk
 layout = [[sg.Text('Seleccionar .asm')],
           [sg.Input(key='file_path'), sg.FileBrowse('Browse')],
-          [sg.Button('Aceptar')],
+          [sg.Button('Aceptar',)],
           [sg.Multiline('',size=(30,10),key="textarea")],
-          [sg.Button('Convertir'), sg.Button('Enviar')]]
+          [sg.Button('Convertir'), sg.Button('Enviar')],
+          [sg.Table(values=registers, headings=['Registros'], justification='left', 
+                    num_rows=32, row_height=20, auto_size_columns=False, 
+                    def_col_width=20, vertical_scroll_only=True, 
+                    display_row_numbers=False,pad=(350,0))]]
 
-window = sg.Window('MIPS-UART-GUI', layout, size=(1000, 600))
+window = sg.Window('MIPS-UART-GUI', layout, size=(1000, 800))
 
 habemus_file = False
 ready_to_send = False
