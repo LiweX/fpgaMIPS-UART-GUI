@@ -46,15 +46,20 @@ while True:
         if not ready_to_send:
             sg.popup_ok('Primero debe seleccionar un programa y convertirlo a código máquina')
             continue
-        bin_file = open("output.txt")
-        file_data = bin_file.read().replace("_", "")
         try:
             # gilada
-            ser = serial.Serial('/dev/ttyUSB0', 115200, 8, timeout=1)
-            ser.write(bin_file.read())
+            ser = serial.Serial('/dev/ttyS0', 9600, 8, timeout=1)
+            with open("output.hex", "rb") as f:
+                while True:
+                    data = f.read(32)
+                    if not data:
+                        break
+                    ser.write(data)
+            ser.close()
         except serial.SerialException as e:
             # explota
             sg.popup_ok('Hay un problema con el puerto serie')
             continue
+
 # Cerrar la ventana y salir del programa
 window.close()

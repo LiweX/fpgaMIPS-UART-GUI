@@ -18,7 +18,7 @@ class Assembler:
         for line in lines:
             line = line.upper()
             formated_line = line.replace('\n', '')
-            if not formated_line == 'HALT':
+            if formated_line != 'HALT':
                 tokens.append(
                     list(filter(None, re.split(string=formated_line, pattern=gramatical_rules))))
             else:
@@ -220,7 +220,7 @@ class Assembler:
             inst_bin = inst_bin
         else:
             print(i_name)
-            log.FATAL(f'Instruccion no reconocida {i_name}')
+            log.FATAL(f'Instrucción no reconocida {i_name}')
 
         return inst_bin
 
