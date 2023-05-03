@@ -39,7 +39,7 @@ while True:
             sg.popup_ok('Debe seleccionar un archivo')
             continue
         # Llamada al programa
-        os.system("python3 -W ignore asm-to-bin.py" + " " + file_path + " " +"output.hex")
+        os.system("python -W ignore asm-to-bin.py" + " " + file_path + " " +"output.hex")
         # sp.call(['python3','-W ignore','asm-to-bin.py',file_path,'output.txt'])
         ready_to_send = True
     elif event == 'Enviar':
@@ -48,7 +48,7 @@ while True:
             continue
         try:
             # gilada
-            ser = serial.Serial('/dev/ttyS0', 9600, 8, timeout=1)
+            ser = serial.Serial('COM4', 9600, 8, timeout=1)
             with open("output.hex", "rb") as f:
                 while True:
                     data = f.read(32)

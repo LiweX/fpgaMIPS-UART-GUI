@@ -1,4 +1,3 @@
-import numpy as np
 import logging as log
 import re
 import argparse
