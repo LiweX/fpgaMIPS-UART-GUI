@@ -3,6 +3,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 import serial
 import os
+import threading
 
 main_window = tk.Tk()
 main_window.geometry('665x490') #resolution de la window
@@ -13,12 +14,18 @@ class Flags: #objeto flags para usar como flags valga la redundancia
     habemus_file:bool   #para saber si ya esta cargado el programa
     ready_to_send:bool  #para saber si esta todo listo para enviar
     connected:bool  #para saber si conectado el puerto serie
-    ser:serial  #objeto serial para conveniencia, poq? no hay poq
+
+def serial_read():
+    while True:
+        if ser.inWaiting():
+            received = str(ser.readline())
+            print("received: " + received)
 
 flags = Flags()
 flags.habemus_file=False
 flags.ready_to_send=False
 flags.connected=False
+
 class Pointer:
     value:int
     prev_val:int
@@ -33,16 +40,16 @@ class Pointer:
         self.value=1
         self.prev_val=1
         self.pointer_type = pointer_type
-    
+
     def get_value(self):
         return self.value
-    
+
     def get_prev(self):
         return self.prev_val
-    
+
     def set_frame(self,frame:tk.Frame):
         self.frame=frame
-    
+
     def update_labels(self): #con eso se cazan los labels de los registros para cuando estan resaltados o deben de dejar de resaltarse
         self.label=self.frame.winfo_children()[self.value-1]
         self.prev_label=self.frame.winfo_children()[self.prev_val-1]
@@ -51,7 +58,7 @@ class Pointer:
     def update_grid(self): #se pinta de blanco el registro apuntado anterior y se pinta el nuevo de amarillo
         self.prev_label.config(bg="white")
         self.label.config(bg="yellow")
-        
+
     def aumentar(self): # aumentar el puntero
         if (self.value < Pointer.MAX):
             self.prev_val=self.value
@@ -67,7 +74,7 @@ class Pointer:
             self.update_labels()
         else:
             print("Puntero de %s al minimo" % (self.pointer_type))
-    
+
 
 def browse_file():  # se llama al apretar el boton browse
     filepath = filedialog.askopenfilename()
@@ -89,13 +96,16 @@ def connect(flags): #se llama al apretar el boton conectar
         messagebox.showinfo("Aviso", "Ya se encuentra conectado")
         return
     try:
-        flags.ser = serial.Serial(port_entry.get(), 9600, 8, timeout=1)
+        global ser
+        ser = serial.Serial(port_entry.get(), 9600, 8, timeout=1)
     except serial.SerialException:
         messagebox.showinfo("Error de conexion", "Hay un problema con el puerto serie")
         return
     else:
         messagebox.showinfo("Aviso", "Conexión establecida exitosamente.")
         flags.connected = True
+        serial_thread = threading.Thread(target=serial_read)
+        serial_thread.start()
 
 def convert(flags): #se llama al apretar convertir
     if not flags.habemus_file:
@@ -111,50 +121,60 @@ def send(flags):    #se llama al apretar enviar
     if not flags.connected:
         messagebox.showinfo("Error de conexion", 'Primero hay que conectarse al puerto serie')
     try:
+        ser.write(b'B')
         with open("output.hex", "rb") as f:
             while True:
                 data = f.read(32)
                 if not data:
                     break
-                flags.ser.write(data)
-            
+                ser.write(data)
+
     except serial.SerialException as e:
         # explota
         messagebox.showinfo("Error de conexion", "Hubo un problema con el puerto serie")
         return
 
 def run():
+    ser.write(b'G')
     print("Apretaste Run")
 
 def step():
-    print("Apretaste Step")  
+    print("Apretaste Step")
+    ser.write(b'S')
 
 def get_PC():
     print("Pediste el valor del PC")
+    ser.write(b'P')
 
 def get_memoria():
-    print("Pediste el valor de memoria apuntado") 
+    ser.write(b'M')
+    print("Pediste el valor de memoria apuntado")
 
 def get_registro():
+    ser.write(b'R')
     print("Pediste el valor de registro apuntado")
 
 def aumentar_puntero_reg():
     register_pointer.aumentar()
+    ser.write(b'T')
     print("Apuntando a R%d" % (register_pointer.get_value()))
 
 def aumentar_puntero_mem():
     memory_pointer.aumentar()
+    ser.write(b',')
     print("Apuntando a R%d" % (memory_pointer.get_value()))
 
 def disminuir_puntero_reg():
     register_pointer.disminuir()
+    ser.write(b'E')
     print("Apuntando a R%d" % (register_pointer.get_value()))
 
 def disminuir_puntero_mem():
     memory_pointer.disminuir()
+    ser.write(b'N')
     print("Apuntando a R%d" % (memory_pointer.get_value()))
 
-    
+
 select_label = tk.Label(main_window,text="Seleccione el archivo .asm",background="lightblue")
 select_label.place(x=10, y=10)
 
@@ -171,6 +191,7 @@ port_label = tk.Label(main_window,text="Puerto serie:", background="lightblue")
 port_label.place(x=10,y=90)
 port_entry = tk.Entry(main_window,width=10)
 port_entry.place(x=85,y=90)
+port_entry.insert(tk.END,"COM4")
 connect_button = tk.Button(main_window, text="Conectar", command=lambda: connect(flags))
 connect_button.place(x=160,y=85)
 
