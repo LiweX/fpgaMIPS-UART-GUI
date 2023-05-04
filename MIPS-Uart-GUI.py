@@ -15,11 +15,25 @@ class Flags: #objeto flags para usar como flags valga la redundancia
     ready_to_send:bool  #para saber si esta todo listo para enviar
     connected:bool  #para saber si conectado el puerto serie
 
-def serial_read():
-    while True:
-        if ser.inWaiting():
-            received = str(ser.readline())
-            print("received: " + received)
+class thread(threading.Thread):
+    pressed_char:str
+
+    def __init__(self, thread_name, thread_ID):
+        threading.Thread.__init__(self)
+        self.thread_name = thread_name
+        self.thread_ID = thread_ID
+
+    def run(self):
+        while True:
+            if ser.inWaiting():
+                received = str(ser.readline()).replace("b", "").replace("'", "")
+                print("envie: " + self.pressed_char + ", recibi: " + received)
+                if self.pressed_char=='P':
+                    PC_frame.config(text=received)
+                elif self.pressed_char=='M':
+                    memory_pointer.label.config(text="R{0}: {1}".format(memory_pointer.value - 1, received))
+                elif self.pressed_char=='R':
+                    register_pointer.label.config(text="R{0}: {1}".format(register_pointer.value - 1, received))
 
 flags = Flags()
 flags.habemus_file=False
@@ -104,7 +118,8 @@ def connect(flags): #se llama al apretar el boton conectar
     else:
         messagebox.showinfo("Aviso", "Conexión establecida exitosamente.")
         flags.connected = True
-        serial_thread = threading.Thread(target=serial_read)
+        global serial_thread
+        serial_thread = thread("SERIAL_THREAD", "666")
         serial_thread.start()
 
 def convert(flags): #se llama al apretar convertir
@@ -136,6 +151,7 @@ def send(flags):    #se llama al apretar enviar
 
 def run():
     ser.write(b'G')
+    serial_thread.pressed_char = 'G'
     print("Apretaste Run")
 
 def step():
@@ -144,10 +160,12 @@ def step():
 
 def get_PC():
     print("Pediste el valor del PC")
+    serial_thread.pressed_char = 'P'
     ser.write(b'P')
 
 def get_memoria():
     ser.write(b'M')
+    serial_thread.pressed_char = 'M'
     print("Pediste el valor de memoria apuntado")
 
 def get_registro():
@@ -174,6 +192,13 @@ def disminuir_puntero_mem():
     ser.write(b'N')
     print("Apuntando a R%d" % (memory_pointer.get_value()))
 
+def erase_program(flags:Flags):
+    ser.write(b'F')
+    print("Borraste el programa")
+    os.remove("./output.hex")
+    flags.habemus_file = False
+    flags.ready_to_send = False
+    text_area.delete(1.0, tk.END)
 
 select_label = tk.Label(main_window,text="Seleccione el archivo .asm",background="lightblue")
 select_label.place(x=10, y=10)
@@ -259,6 +284,9 @@ down_memory_button = tk.Button(memory_selector_frame,text="⇩",command=disminui
 down_memory_button.grid(row=0,column=0)
 memory_selector_frame.place(x=540,y=450)
 
+erase_button = tk.Button(main_window,text="Borrar",background="red",fg="white",command=lambda: erase_program(flags))
+erase_button.place(x=210 ,y=440)
+
 memory_pointer= Pointer("memoria")
 memory_pointer.set_frame(memory_frame)
 memory_pointer.update_labels()
@@ -266,6 +294,4 @@ register_pointer= Pointer("registro")
 register_pointer.set_frame(registers_frame)
 register_pointer.update_labels()
 
-
 main_window.mainloop()
-
