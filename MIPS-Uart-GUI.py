@@ -7,6 +7,7 @@ import os
 main_window = tk.Tk()
 main_window.geometry('665x490') #resolution de la window
 main_window.title("MIPS UART GUI")
+main_window.config(background="lightblue")
 
 class Flags: #objeto flags para usar como flags valga la redundancia
     habemus_file:bool   #para saber si ya esta cargado el programa
@@ -154,7 +155,7 @@ def disminuir_puntero_mem():
     print("Apuntando a R%d" % (memory_pointer.get_value()))
 
     
-select_label = tk.Label(main_window,text="Seleccione el archivo .asm")
+select_label = tk.Label(main_window,text="Seleccione el archivo .asm",background="lightblue")
 select_label.place(x=10, y=10)
 
 browse_entry = tk.Entry(main_window,width=35)
@@ -163,41 +164,41 @@ browse_entry.place(x=12,y=35)
 browse_button = tk.Button(main_window, text="Browse", command=browse_file)
 browse_button.place(x=240,y=30)
 
-accept_button = tk.Button(main_window, text="Aceptar", command=lambda: load_file(flags))
-accept_button.place(x=12,y=60)
+open_button = tk.Button(main_window, text="Abrir", command=lambda: load_file(flags))
+open_button.place(x=12,y=60)
 
-text_area = tk.Text(main_window,width=30,height=10)
-text_area.place(x=12,y=120)
-scrollbar = tk.Scrollbar(main_window)
-scrollbar.place(x=270,y=120,height=170)
-text_area.config(yscrollcommand=scrollbar.set)
-scrollbar.config(command=text_area.yview)
-
-port_label = tk.Label(main_window,text="Puerto serie:")
+port_label = tk.Label(main_window,text="Puerto serie:", background="lightblue")
 port_label.place(x=10,y=90)
 port_entry = tk.Entry(main_window,width=10)
 port_entry.place(x=85,y=90)
 connect_button = tk.Button(main_window, text="Conectar", command=lambda: connect(flags))
 connect_button.place(x=160,y=85)
 
-convert_button = tk.Button(main_window, text="Convertir", command=lambda: convert(flags))
-convert_button.place(x=12 ,y=290)
-send_button = tk.Button(main_window, text="Enviar", command=lambda: send(flags))
-send_button.place(x=80 ,y=290)
+text_area = tk.Text(main_window,width=30,height=19)
+text_area.place(x=12,y=120)
+scrollbar = tk.Scrollbar(main_window)
+scrollbar.place(x=270,y=120,height=310)
+text_area.config(yscrollcommand=scrollbar.set)
+scrollbar.config(command=text_area.yview)
 
-PC_label = tk.Label(main_window,text="PC:")
+convert_button = tk.Button(main_window, text="Convertir", command=lambda: convert(flags))
+convert_button.place(x=12 ,y=440)
+send_button = tk.Button(main_window, text="Enviar", command=lambda: send(flags))
+send_button.place(x=80 ,y=440)
+
+PC_label = tk.Label(main_window,text="PC:", background="lightblue")
 PC_label.place(x=320,y=30)
 PC_frame = tk.Label(width=5,height=1,bg="white",fg="black",relief=tk.SUNKEN,bd=3,justify="center",text="1")
 PC_frame.place(x=350,y=30)
 PC_button = tk.Button(main_window,text="Get", command=get_PC)
 PC_button.place(x=400,y=27)
 
-run_button = tk.Button(main_window,text="Run",width=10, command=run)
+run_button = tk.Button(main_window,text="Run",width=10, command=run, background="lightgreen")
 run_button.place(x=470,y=27)
-step_button = tk.Button(main_window,text="Step",width=10, command=step)
+step_button = tk.Button(main_window,text="Step",width=10, command=step, background="orange")
 step_button.place(x=560,y=27)
 
-registers_label = tk.Label(main_window,text="Registros")
+registers_label = tk.Label(main_window,text="Registros", background="lightblue")
 registers_label.place(x=355,y=70)
 registers_frame = tk.Frame(main_window)
 for i in range(32):
@@ -217,7 +218,7 @@ down_register_button = tk.Button(register_selector_frame,text="⇩",command=dism
 down_register_button.grid(row=0,column=0)
 register_selector_frame.place(x=350,y=450)
 
-memory_label = tk.Label(main_window,text="Memoria")
+memory_label = tk.Label(main_window,text="Memoria", background="lightblue")
 memory_label.place(x=545,y=70)
 memory_frame = tk.Frame(main_window)
 for i in range(32):
