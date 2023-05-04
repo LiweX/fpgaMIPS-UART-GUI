@@ -170,6 +170,7 @@ def get_memoria():
 
 def get_registro():
     ser.write(b'R')
+    serial_thread.pressed_char = 'R'
     print("Pediste el valor de registro apuntado")
 
 def aumentar_puntero_reg():
