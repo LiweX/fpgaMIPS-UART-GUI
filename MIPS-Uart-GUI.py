@@ -6,17 +6,17 @@ import os
 import threading
 
 main_window = tk.Tk()
-main_window.geometry('665x490') #resolution de la window
+main_window.geometry('665x490') # resolution de la window
 main_window.title("MIPS UART GUI")
 main_window.config(background="lightblue")
 
-class Flags: #objeto flags para usar como flags valga la redundancia
-    habemus_file:bool   #para saber si ya esta cargado el programa
-    ready_to_send:bool  #para saber si esta todo listo para enviar
-    connected:bool  #para saber si conectado el puerto serie
+class Flags: # objeto flags para usar como flags valga la redundancia
+    habemus_file:bool # para saber si ya esta cargado el programa
+    ready_to_send:bool # para saber si esta todo listo para enviar
+    connected:bool # para saber si conectado el puerto serie
 
 class thread(threading.Thread):
-    pressed_char:str
+    pressed_char:str = ""
 
     def __init__(self, thread_name, thread_ID):
         threading.Thread.__init__(self)
@@ -26,8 +26,24 @@ class thread(threading.Thread):
     def run(self):
         while True:
             if ser.inWaiting():
-                received = str(ser.readline()).replace("b", "").replace("'", "")
-                print("envie: " + self.pressed_char + ", recibi: " + received)
+                received = int.from_bytes(ser.readline(), byteorder='big')
+                receivedHex = f'0x{received:08X}'
+
+                print(received) # decimal
+                print(receivedHex) # hexadecimal
+
+                # si incremento o decremento el puntero de registro...
+                if self.pressed_char in ['E', 'T']:
+                    register_pointer.prev_val = register_pointer.value
+                    register_pointer.value = received + 1
+                    register_pointer.update_labels()
+                
+                # si incremento o decremento el puntero de memoria...
+                if self.pressed_char in ['N', ',']:
+                    memory_pointer.prev_val = memory_pointer.value
+                    memory_pointer.value = int(received / 4) + 1
+                    memory_pointer.update_labels()
+                
                 if self.pressed_char=='P':
                     PC_frame.config(text=received)
                 elif self.pressed_char=='M':
@@ -64,30 +80,14 @@ class Pointer:
     def set_frame(self,frame:tk.Frame):
         self.frame=frame
 
-    def update_labels(self): #con eso se cazan los labels de los registros para cuando estan resaltados o deben de dejar de resaltarse
+    def update_labels(self): # con eso se cazan los labels de los registros para cuando estan resaltados o deben de dejar de resaltarse
         self.label=self.frame.winfo_children()[self.value-1]
         self.prev_label=self.frame.winfo_children()[self.prev_val-1]
         self.update_grid()
 
-    def update_grid(self): #se pinta de blanco el registro apuntado anterior y se pinta el nuevo de amarillo
+    def update_grid(self): # se pinta de blanco el registro apuntado anterior y se pinta el nuevo de amarillo
         self.prev_label.config(bg="white")
         self.label.config(bg="yellow")
-
-    def aumentar(self): # aumentar el puntero
-        if (self.value < Pointer.MAX):
-            self.prev_val=self.value
-            self.value+=1
-            self.update_labels()
-        else:
-            print("Puntero de %s al maximo" % (self.pointer_type))
-
-    def disminuir(self): # disminuir el puntero
-        if (self.value > Pointer.MIN):
-            self.prev_val=self.value
-            self.value-=1
-            self.update_labels()
-        else:
-            print("Puntero de %s al minimo" % (self.pointer_type))
 
 
 def browse_file():  # se llama al apretar el boton browse
@@ -105,7 +105,7 @@ def load_file(flags): # se llama al apretar el boton aceptar
     file.close()
     flags.habemus_file=True
 
-def connect(flags): #se llama al apretar el boton conectar
+def connect(flags): # se llama al apretar el boton conectar
     if flags.connected:
         messagebox.showinfo("Aviso", "Ya se encuentra conectado")
         return
@@ -122,14 +122,14 @@ def connect(flags): #se llama al apretar el boton conectar
         serial_thread = thread("SERIAL_THREAD", "666")
         serial_thread.start()
 
-def convert(flags): #se llama al apretar convertir
+def convert(flags): # se llama al apretar convertir
     if not flags.habemus_file:
         messagebox.showinfo("Error", "Debe seleccionar un archivo")
         return
-    os.system("python -W ignore asm-to-bin.py" + " " + browse_entry.get() + " " +"output.hex")
+    os.system("python -W ignore asm-to-bin.py " + browse_entry.get() + " output.hex")
     flags.ready_to_send=True
 
-def send(flags):    #se llama al apretar enviar
+def send(flags): # se llama al apretar enviar
     if not flags.ready_to_send:
         messagebox.showinfo("Manijin", 'Primero debe seleccionar un programa y convertirlo a código máquina')
         return
@@ -174,24 +174,24 @@ def get_registro():
     print("Pediste el valor de registro apuntado")
 
 def aumentar_puntero_reg():
-    register_pointer.aumentar()
     ser.write(b'T')
-    print("Apuntando a R%d" % (register_pointer.get_value()))
+    serial_thread.pressed_char = 'T'
+    print("Apuntando a R%d" % register_pointer.get_value())
 
 def aumentar_puntero_mem():
-    memory_pointer.aumentar()
     ser.write(b',')
-    print("Apuntando a R%d" % (memory_pointer.get_value()))
+    serial_thread.pressed_char = ','
+    print("Apuntando a R%d" % memory_pointer.get_value())
 
 def disminuir_puntero_reg():
-    register_pointer.disminuir()
     ser.write(b'E')
-    print("Apuntando a R%d" % (register_pointer.get_value()))
+    serial_thread.pressed_char = 'E'
+    print("Apuntando a R%d" % register_pointer.get_value())
 
 def disminuir_puntero_mem():
-    memory_pointer.disminuir()
     ser.write(b'N')
-    print("Apuntando a R%d" % (memory_pointer.get_value()))
+    serial_thread.pressed_char = 'N'
+    print("Apuntando a R%d" % memory_pointer.get_value())
 
 def erase_program(flags:Flags):
     ser.write(b'F')
@@ -217,7 +217,7 @@ port_label = tk.Label(main_window,text="Puerto serie:", background="lightblue")
 port_label.place(x=10,y=90)
 port_entry = tk.Entry(main_window,width=10)
 port_entry.place(x=85,y=90)
-port_entry.insert(tk.END,"COM4")
+port_entry.insert(tk.END,"COM6")
 connect_button = tk.Button(main_window, text="Conectar", command=lambda: connect(flags))
 connect_button.place(x=160,y=85)
 
