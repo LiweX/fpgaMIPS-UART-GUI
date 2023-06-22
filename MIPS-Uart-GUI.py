@@ -9,6 +9,10 @@ main_window = tk.Tk()
 main_window.geometry('665x490') # resolution de la window
 main_window.title("MIPS UART GUI")
 main_window.config(background="lightblue")
+main_window.resizable(False, False)
+
+MAX_LIMIT = 32
+MIN_LIMIT = 1
 
 class Flags: # objeto flags para usar como flags valga la redundancia
     habemus_file:bool # para saber si ya esta cargado el programa
@@ -37,13 +41,13 @@ class thread(threading.Thread):
                     register_pointer.prev_val = register_pointer.value
                     register_pointer.value = received + 1
                     register_pointer.update_labels()
-                
+
                 # si incremento o decremento el puntero de memoria...
                 if self.pressed_char in ['N', ',']:
                     memory_pointer.prev_val = memory_pointer.value
                     memory_pointer.value = int(received / 4) + 1
                     memory_pointer.update_labels()
-                
+
                 if self.pressed_char=='P':
                     PC_frame.config(text=received)
                 elif self.pressed_char=='M':
@@ -121,6 +125,8 @@ def connect(flags): # se llama al apretar el boton conectar
         global serial_thread
         serial_thread = thread("SERIAL_THREAD", "666")
         serial_thread.start()
+        # fixeo pointers
+        aumentar_puntero_reg()
 
 def convert(flags): # se llama al apretar convertir
     if not flags.habemus_file:
@@ -144,8 +150,7 @@ def send(flags): # se llama al apretar enviar
                     break
                 ser.write(data)
 
-    except serial.SerialException as e:
-        # explota
+    except serial.SerialException:
         messagebox.showinfo("Error de conexion", "Hubo un problema con el puerto serie")
         return
 
@@ -174,24 +179,28 @@ def get_registro():
     print("Pediste el valor de registro apuntado")
 
 def aumentar_puntero_reg():
-    ser.write(b'T')
-    serial_thread.pressed_char = 'T'
-    print("Apuntando a R%d" % register_pointer.get_value())
+    if register_pointer.value < MAX_LIMIT:
+        ser.write(b'T')
+        serial_thread.pressed_char = 'T'
+        print("Apuntando a R%d" % register_pointer.get_value())
 
 def aumentar_puntero_mem():
-    ser.write(b',')
-    serial_thread.pressed_char = ','
-    print("Apuntando a R%d" % memory_pointer.get_value())
+    if memory_pointer.value < MAX_LIMIT / 4:
+        ser.write(b',')
+        serial_thread.pressed_char = ','
+        print("Apuntando a R%d" % memory_pointer.get_value())
 
 def disminuir_puntero_reg():
-    ser.write(b'E')
-    serial_thread.pressed_char = 'E'
-    print("Apuntando a R%d" % register_pointer.get_value())
+    if register_pointer.value > MIN_LIMIT:
+        ser.write(b'E')
+        serial_thread.pressed_char = 'E'
+        print("Apuntando a R%d" % register_pointer.get_value())
 
 def disminuir_puntero_mem():
-    ser.write(b'N')
-    serial_thread.pressed_char = 'N'
-    print("Apuntando a R%d" % memory_pointer.get_value())
+    if memory_pointer.value > MIN_LIMIT:
+        ser.write(b'N')
+        serial_thread.pressed_char = 'N'
+        print("Apuntando a R%d" % memory_pointer.get_value())
 
 def erase_program(flags:Flags):
     ser.write(b'F')
@@ -268,12 +277,10 @@ register_selector_frame.place(x=350,y=450)
 memory_label = tk.Label(main_window,text="Memoria", background="lightblue")
 memory_label.place(x=545,y=70)
 memory_frame = tk.Frame(main_window)
-for i in range(32):
-    label = tk.Label(memory_frame,bg="white", text=f"R{i}",relief=tk.SUNKEN,bd=2,width=10,height=1)
-    if i % 2 == 0:
-        label.grid(row=32-i,column=0)
-    else:
-        label.grid(row=32-i+1,column=1)
+for i in range(8):
+    label = tk.Label(memory_frame,bg="white", text=f"R{i}",relief=tk.SUNKEN,bd=2,width=20,height=1)
+    label.grid(row=8-i,column=0)
+
 memory_frame.place(x=500,y=100)
 
 memory_selector_frame = tk.Frame(main_window)
