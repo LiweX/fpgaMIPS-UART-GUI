@@ -6,7 +6,7 @@ import os
 import threading
 
 main_window = tk.Tk()
-main_window.geometry('665x490') # resolution de la window
+main_window.geometry('710x490') # resolution de la window
 main_window.title("MIPS UART GUI")
 main_window.config(background="lightblue")
 main_window.resizable(False, False)
@@ -18,6 +18,7 @@ class Flags: # objeto flags para usar como flags valga la redundancia
     habemus_file:bool # para saber si ya esta cargado el programa
     ready_to_send:bool # para saber si esta todo listo para enviar
     connected:bool # para saber si conectado el puerto serie
+    hex_dec:bool # para saber si mostrar los datos en formato hexadecimal o decimal (False = hex)
 
 class thread(threading.Thread):
     pressed_char:str = ""
@@ -51,15 +52,15 @@ class thread(threading.Thread):
                 if self.pressed_char=='P':
                     PC_frame.config(text=received)
                 elif self.pressed_char=='M':
-                    memory_pointer.label.config(text="R{0}: {1}".format(memory_pointer.value - 1, received))
+                    memory_pointer.label.config(text="R{0}: {1}".format(memory_pointer.value - 1, received if flags.hex_dec else receivedHex))
                 elif self.pressed_char=='R':
-                    register_pointer.label.config(text="R{0}: {1}".format(register_pointer.value - 1, received))
+                    register_pointer.label.config(text="R{0}: {1}".format(register_pointer.value - 1, received if flags.hex_dec else receivedHex))
 
 flags = Flags()
 flags.habemus_file=False
 flags.ready_to_send=False
 flags.connected=False
-
+flags.hex_dec=False
 class Pointer:
     value:int
     prev_val:int
@@ -210,6 +211,17 @@ def erase_program(flags:Flags):
     flags.ready_to_send = False
     text_area.delete(1.0, tk.END)
 
+def Simpletoggle():
+    flags.hex_dec = not flags.hex_dec
+    if toggle_button.config('text')[-1] == 'DEC':
+        toggle_button.config(text='HEX')
+    else:
+        toggle_button.config(text='DEC')
+
+
+toggle_button = tk.Button(text="HEX", width=10, command=Simpletoggle)
+toggle_button.place(x=587,y=350)
+
 select_label = tk.Label(main_window,text="Seleccione el archivo .asm",background="lightblue")
 select_label.place(x=10, y=10)
 
@@ -255,10 +267,10 @@ step_button = tk.Button(main_window,text="Step",width=10, command=step, backgrou
 step_button.place(x=560,y=27)
 
 registers_label = tk.Label(main_window,text="Registros", background="lightblue")
-registers_label.place(x=355,y=70)
+registers_label.place(x=390,y=70)
 registers_frame = tk.Frame(main_window)
 for i in range(32):
-    label = tk.Label(registers_frame,bg="white", text=f"R{i}",relief=tk.SUNKEN,bd=2,width=10,height=1)
+    label = tk.Label(registers_frame,bg="white", text=f"R{i}",relief=tk.SUNKEN,bd=2,width=15,height=1)
     if i % 2 == 0:
         label.grid(row=32-i,column=0)
     else:
@@ -272,16 +284,16 @@ get_register_button = tk.Button(register_selector_frame,text="Get",command=get_r
 get_register_button.grid(row=0,column=1)
 down_register_button = tk.Button(register_selector_frame,text="⇩",command=disminuir_puntero_reg)
 down_register_button.grid(row=0,column=0)
-register_selector_frame.place(x=350,y=450)
+register_selector_frame.place(x=387,y=450)
 
 memory_label = tk.Label(main_window,text="Memoria", background="lightblue")
-memory_label.place(x=545,y=70)
+memory_label.place(x=595,y=70)
 memory_frame = tk.Frame(main_window)
 for i in range(8):
     label = tk.Label(memory_frame,bg="white", text=f"R{i}",relief=tk.SUNKEN,bd=2,width=20,height=1)
     label.grid(row=8-i,column=0)
 
-memory_frame.place(x=500,y=100)
+memory_frame.place(x=550,y=100)
 
 memory_selector_frame = tk.Frame(main_window)
 up_memory_button = tk.Button(memory_selector_frame,text="⇧",command=aumentar_puntero_mem)
@@ -290,7 +302,7 @@ get_memory_button = tk.Button(memory_selector_frame,text="Get",command=get_memor
 get_memory_button.grid(row=0,column=1)
 down_memory_button = tk.Button(memory_selector_frame,text="⇩",command=disminuir_puntero_mem)
 down_memory_button.grid(row=0,column=0)
-memory_selector_frame.place(x=540,y=450)
+memory_selector_frame.place(x=587,y=280)
 
 erase_button = tk.Button(main_window,text="Borrar",background="red",fg="white",command=lambda: erase_program(flags))
 erase_button.place(x=210 ,y=440)
